@@ -1,0 +1,8 @@
+#JSGF V1.0;
+
+grammar hp;
+
+<lumos> = lumos [maxima];
+<nox> = nox;
+
+public <light> = <lumos> | <nox>;
