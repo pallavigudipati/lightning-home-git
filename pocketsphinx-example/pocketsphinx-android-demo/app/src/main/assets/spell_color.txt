@@ -1,0 +1,6 @@
+# Spell;Color(#RRGGBB)
+lumos;#FAEBD7
+lumos maxima;#FFFFFF
+nox;#000000
+stupefy;#FF0000
+avada kedavra;#00FF00

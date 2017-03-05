@@ -36,21 +36,22 @@ import android.content.pm.PackageManager;
 import android.graphics.Typeface;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.SystemClock;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.skyfishjy.library.RippleBackground;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.HashMap;
+import java.util.Map;
 
 import edu.cmu.pocketsphinx.Assets;
 import edu.cmu.pocketsphinx.Hypothesis;
@@ -58,17 +59,18 @@ import edu.cmu.pocketsphinx.RecognitionListener;
 import edu.cmu.pocketsphinx.SpeechRecognizer;
 import edu.cmu.pocketsphinx.SpeechRecognizerSetup;
 
-import static android.widget.Toast.makeText;
-
 public class PocketSphinxActivity extends Activity implements
         RecognitionListener {
 
     private static final String HP_HOME = "hphome";
+    private static final String SPELL_COLORS_FILE = "spell_color.txt";
 
     /* Used to handle permission request */
     private static final int PERMISSIONS_REQUEST_RECORD_AUDIO = 1;
 
+    private Map<String, String> spellsColors;
     private SpeechRecognizer recognizer;
+    private HueHandler hueHandler;
 
     @Override
     public void onCreate(Bundle state) {
@@ -79,23 +81,24 @@ public class PocketSphinxActivity extends Activity implements
 
         final RippleBackground rippleBackground = (RippleBackground) findViewById(R.id.content);
 
-        TextView display = (TextView) findViewById(R.id.display);
+        final TextView display = (TextView) findViewById(R.id.display);
         Typeface quickSandFont = Typeface.createFromAsset(getAssets(),
                 "fonts/Quicksand-Regular.otf");
         display.setTypeface(quickSandFont);
-        display.setText("Cast");
+        display.setText("drawing magic ...");
 
-//        Button startButton = (Button) findViewById(R.id.startButton);
-//        Button stopButton = (Button) findViewById(R.id.stopButton);
+        hueHandler = new HueHandler();
+        loadColors();
+
         ImageView micButton = (ImageView) findViewById(R.id.micButton);
 
         micButton.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    System.out.println("Strting an");
                     rippleBackground.startRippleAnimation();
                     recognizer.startListening(HP_HOME);
+                    display.setText("");
                     return true;
                 } else if (event.getAction() == MotionEvent.ACTION_UP) {
                     recognizer.stop();
@@ -107,24 +110,12 @@ public class PocketSphinxActivity extends Activity implements
             }
         });
 
-//        startButton.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                recognizer.startListening(HP_HOME);
-//            }
-//        });
-//
-//        stopButton.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                recognizer.stop();
-//            }
-//        });
-
         // Check if user has given permission to record audio
-        int permissionCheck = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.RECORD_AUDIO);
+        int permissionCheck = ContextCompat.checkSelfPermission(getApplicationContext(),
+                Manifest.permission.RECORD_AUDIO);
         if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, PERMISSIONS_REQUEST_RECORD_AUDIO);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO},
+                    PERMISSIONS_REQUEST_RECORD_AUDIO);
             return;
         }
         runRecognizerSetup();
@@ -149,10 +140,18 @@ public class PocketSphinxActivity extends Activity implements
             @Override
             protected void onPostExecute(Exception result) {
                 if (result != null) {
-                  //  ((TextView) findViewById(R.id.caption_text))
-                   //         .setText("Failed to init recognizer " + result);
+                    ((TextView) findViewById(R.id.display))
+                            .setText("Failed to init recognizer " + result);
                 } else {
-                    // TODO: Layout should start here
+                    // HueHandler might not be done
+                    // TODO: better way of doing this
+                    boolean flag = true;
+                    while (flag) {
+                        if (hueHandler.phLight != null) {
+                            flag = false;
+                        }
+                    }
+                    ((TextView) findViewById(R.id.display)).setText("cast");
                 }
             }
         }.execute();
@@ -180,6 +179,8 @@ public class PocketSphinxActivity extends Activity implements
             recognizer.cancel();
             recognizer.shutdown();
         }
+
+        hueHandler.wrapUp();
     }
 
     /**
@@ -200,26 +201,18 @@ public class PocketSphinxActivity extends Activity implements
      */
     @Override
     public void onResult(Hypothesis hypothesis) {
-      //  ((TextView) findViewById(R.id.result_text)).setText("");
         if (hypothesis != null) {
             String text = hypothesis.getHypstr();
-            // makeText(getApplicationContext(), text, Toast.LENGTH_SHORT).show();
-            ((TextView) findViewById(R.id.display)).setText(text);
             System.out.println("onResult: " + text);
+            TextView display = (TextView) findViewById(R.id.display);
+            if (!spellsColors.containsKey(text)) {
+                display.setText("cast again");
+            } else {
+                display.setText(text);
+                hueHandler.setColor(spellsColors.get(text));
+            }
         }
     }
-
-    @Override
-    public void onBeginningOfSpeech() {
-    }
-
-    /**
-     * We stop recognizer here to get a final result
-     */
-    @Override
-    public void onEndOfSpeech() {
-    }
-
 
     private void setupRecognizer(File assetsDir) throws IOException {
         recognizer = SpeechRecognizerSetup.defaultSetup()
@@ -238,11 +231,36 @@ public class PocketSphinxActivity extends Activity implements
     }
 
     @Override
-    public void onError(Exception error) {
-       // ((TextView) findViewById(R.id.caption_text)).setText(error.getMessage());
-    }
+    public void onBeginningOfSpeech() {}
+
+    /**
+     * We stop recognizer here to get a final result
+     */
+    @Override
+    public void onEndOfSpeech() {}
 
     @Override
-    public void onTimeout() {
+    public void onError(Exception error) {}
+
+    @Override
+    public void onTimeout() {}
+
+    // Loads spell-color mapping
+    private void loadColors() {
+        spellsColors = new HashMap<>();
+        try {
+            InputStream is = getAssets().open(SPELL_COLORS_FILE);
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(is));
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                if (!(line.charAt(0) == '#')) {
+                    String[] spellColor = line.split(";");
+                    spellsColors.put(spellColor[0], spellColor[1]);
+                }
+            }
+            bufferedReader.close();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
     }
 }

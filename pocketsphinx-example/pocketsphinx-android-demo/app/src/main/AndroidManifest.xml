@@ -7,12 +7,12 @@
 
     <application
         android:allowBackup="false"
-        android:icon="@drawable/icon"
+        android:icon="@drawable/ic_bolt_turquoise"
         android:label="@string/app_name"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
         <activity
             android:name="PocketSphinxActivity"
-            android:label="@string/app_name" >
+            android:label="HP Home" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

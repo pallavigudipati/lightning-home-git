@@ -18,4 +18,6 @@ dependencies {
     compile project(':models')
     compile 'com.android.support:appcompat-v7:24.1.1'
     compile 'com.skyfishjy.ripplebackground:library:1.0.1'
+    compile files('libs/huelocalsdk.jar')
+    compile files('libs/huesdkresources.jar')
 }

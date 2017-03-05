@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xl="http://www.w3.org/1999/xlink" version="1.1" viewBox="-127 0 510 640" width="510pt" height="640pt" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <metadata> Produced by OmniGraffle 7.2.2 
+    <dc:date>2017-03-04 16:37:24 +0000</dc:date>
+  </metadata>
+  <defs/>
+  <g stroke="none" stroke-opacity="1" stroke-dasharray="none" fill="none" fill-opacity="1">
+    <title>Canvas 1</title>
+    <g>
+      <title>pen</title>
+      <path d="M 299.98837 128.63663 C 394.83737 223.48515 394.83737 377.26485 299.98837 472.11337 C 205.13985 566.9624 51.360147 566.9624 -43.48837 472.11337 C -138.33737 377.26485 -138.33737 223.48515 -43.48837 128.63663 C 51.360147 33.78763 205.13985 33.78763 299.98837 128.63663" fill="white"/>
+      <path d="M 299.98837 128.63663 C 394.83737 223.48515 394.83737 377.26485 299.98837 472.11337 C 205.13985 566.9624 51.360147 566.9624 -43.48837 472.11337 C -138.33737 377.26485 -138.33737 223.48515 -43.48837 128.63663 C 51.360147 33.78763 205.13985 33.78763 299.98837 128.63663" stroke="#36d7b7" stroke-linecap="round" stroke-linejoin="round" stroke-width="23"/>
+      <path d="M 149.5 118 C 188 118 193 118 193 118 L 118.5 270.5 L 221 270.5 L 78 507.5 L 133 318 L 35.5 318 L 110 118 C 110 118 111 118 149.5 118 Z" fill="#36d7b7"/>
+    </g>
+  </g>
+</svg>

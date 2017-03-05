@@ -14,7 +14,7 @@
         android:layout_width="match_parent"
         android:layout_height="400dp"
         android:id="@+id/content"
-        app:rb_color="#0099CC"
+        app:rb_color="#32d1a8"
         app:rb_radius="32dp"
         app:rb_rippleAmount="4"
         app:rb_duration="1000"
@@ -23,9 +23,9 @@
 
         <ImageView
             android:id="@+id/micButton"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:src="@drawable/phone2"
+            android:layout_width="150dp"
+            android:layout_height="150dp"
+            android:src="@drawable/ic_bolt_turquoise"
             android:layout_centerInParent="true" />
     </com.skyfishjy.library.RippleBackground>
 
@@ -36,7 +36,8 @@
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="65dp"
+        android:gravity="center"
         android:text=""
-        android:textSize="30sp" />
+        android:textSize="36sp" />
 
 </RelativeLayout>
