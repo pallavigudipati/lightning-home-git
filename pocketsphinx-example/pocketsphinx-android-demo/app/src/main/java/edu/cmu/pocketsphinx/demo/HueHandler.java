@@ -31,14 +31,19 @@ public class HueHandler {
 
     // TODO: We should actually let the user choose one.
     // TODO: That code can be found in the demo app for Hue
-    private static final String IP_ADDRESS = "192.168.1.13";
-    private static final String USERNAME = "HPHome";
+    private static final String IP_ADDRESS = "192.168.1.16";
+    private static final String USERNAME = "UY0J1uAWDCOtEjLwoewsTm4JUCgycrtKoUdON69j";
     private static final String TAG = "HPHome";
 
     // private HueSharedPreferences prefs;
     // private AccessPointListAdapter adapter;
 
     private boolean lastSearchWasIPScan = false;
+
+    public static void main(String[] args) {
+        HueHandler handler = new HueHandler();
+       // handler.setColor("#636161");
+    }
 
     // Local SDK Listener
     private PHSDKListener listener = new PHSDKListener() {
@@ -126,7 +131,8 @@ public class HueHandler {
 
         // Set the Device Name (name of your app). This will be stored in your bridge whitelist entry.
         phHueSDK.setAppName(APP_NAME);
-        phHueSDK.setDeviceName(android.os.Build.MODEL);
+        // phHueSDK.setDeviceName(android.os.Build.MODEL);
+        phHueSDK.setDeviceName(APP_NAME);
 
         // Register the PHSDKListener to receive callbacks from the bridge.
         phHueSDK.getNotificationManager().registerSDKListener(listener);
@@ -174,7 +180,10 @@ public class HueHandler {
     }
 
     public static float[] rgbToXy(String hexColor) {
+        System.out.println(hexColor);
         int rgbColor = Color.parseColor(hexColor);
+        // int rgbColor = 0xFFFF0000;
+        System.out.println(rgbColor);
         return PHUtilities.calculateXY(rgbColor, Build.MODEL);
     }
 

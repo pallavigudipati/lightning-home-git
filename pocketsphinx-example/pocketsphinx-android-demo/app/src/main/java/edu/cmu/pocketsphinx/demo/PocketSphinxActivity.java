@@ -38,11 +38,23 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.philips.lighting.hue.listener.PHLightListener;
+import com.philips.lighting.hue.sdk.PHAccessPoint;
+import com.philips.lighting.hue.sdk.PHHueSDK;
+import com.philips.lighting.hue.sdk.PHMessageType;
+import com.philips.lighting.hue.sdk.PHSDKListener;
+import com.philips.lighting.model.PHBridge;
+import com.philips.lighting.model.PHBridgeResource;
+import com.philips.lighting.model.PHHueError;
+import com.philips.lighting.model.PHHueParsingError;
+import com.philips.lighting.model.PHLight;
+import com.philips.lighting.model.PHLightState;
 import com.skyfishjy.library.RippleBackground;
 
 import java.io.BufferedReader;
@@ -50,7 +62,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import edu.cmu.pocketsphinx.Assets;
@@ -70,7 +86,96 @@ public class PocketSphinxActivity extends Activity implements
 
     private Map<String, String> spellsColors;
     private SpeechRecognizer recognizer;
-    private HueHandler hueHandler;
+//    private HueHandler hueHandler;
+
+    public PHHueSDK phHueSDK;
+    public PHBridge phBridge;
+    public PHLight phLight;
+    public static final String APP_NAME = "HPHomeApp";
+    public static final String TAG = "HPHomeApp";
+    // TODO: We should actually let the user choose one.
+    // TODO: That code can be found in the demo app for Hue
+    public static final String IP_ADDRESS = "192.168.1.16";
+    public static final String USERNAME = "UY0J1uAWDCOtEjLwoewsTm4JUCgycrtKoUdON69j";
+
+    public PHSDKListener listener = new PHSDKListener() {
+        @Override
+        public void onAccessPointsFound(List<PHAccessPoint> accessPoint) {
+            if (accessPoint != null && accessPoint.size() > 0) {
+                phHueSDK.getAccessPointsFound().clear();
+                phHueSDK.getAccessPointsFound().addAll(accessPoint);
+            }
+        }
+
+        @Override
+        public void onCacheUpdated(List<Integer> arg0, PHBridge bridge) {}
+
+        @Override
+        public void onBridgeConnected(PHBridge b, String username) {
+            phHueSDK.setSelectedBridge(b);
+            phHueSDK.enableHeartbeat(b, PHHueSDK.HB_INTERVAL);
+            phHueSDK.getLastHeartbeat().put(b.getResourceCache().getBridgeConfiguration().getIpAddress(),
+                    System.currentTimeMillis());
+
+            phBridge = b;
+            List<PHLight> allLights = phBridge.getResourceCache().getAllLights();
+            // TODO: Generalize for all lights. Currently have money only for one :P
+            // TODO: MainActivity should checkup on phLight before displaying "cast"
+            phLight = allLights.get(0);
+        }
+
+        @Override
+        public void onAuthenticationRequired(PHAccessPoint accessPoint) {
+            System.out.println("Authentication required");
+            phHueSDK.startPushlinkAuthentication(accessPoint);
+        }
+
+        @Override
+        public void onConnectionResumed(PHBridge bridge) {
+            phHueSDK.getLastHeartbeat().put(bridge.getResourceCache().getBridgeConfiguration().getIpAddress(),
+                    System.currentTimeMillis());
+            for (int i = 0; i < phHueSDK.getDisconnectedAccessPoint().size(); i++) {
+                if (phHueSDK.getDisconnectedAccessPoint().get(i).getIpAddress()
+                        .equals(bridge.getResourceCache().getBridgeConfiguration().getIpAddress())) {
+                    phHueSDK.getDisconnectedAccessPoint().remove(i);
+                }
+            }
+
+        }
+
+        @Override
+        public void onConnectionLost(PHAccessPoint accessPoint) {
+            if (!phHueSDK.getDisconnectedAccessPoint().contains(accessPoint)) {
+                phHueSDK.getDisconnectedAccessPoint().add(accessPoint);
+            }
+        }
+
+        @Override
+        public void onError(int code, final String message) {
+            Log.e(TAG, "on Error Called : " + code + ":" + message);
+
+            if (code == PHHueError.NO_CONNECTION) {
+                Log.w(TAG, "On No Connection");
+            } else if (code == PHHueError.AUTHENTICATION_FAILED ||
+                    code == PHMessageType.PUSHLINK_AUTHENTICATION_FAILED) {
+                Log.w(TAG, "Authentication failed");
+            } else if (code == PHHueError.BRIDGE_NOT_RESPONDING) {
+                Log.w(TAG, "Bridge Not Responding . . . ");
+            }
+            else if (code == PHMessageType.BRIDGE_NOT_FOUND) {
+                Log.w(TAG, "Bridge not found");
+            } else {
+                Log.w(TAG, "Unknown error: " + message);
+            }
+        }
+
+        @Override
+        public void onParsingErrors(List<PHHueParsingError> parsingErrorsList) {
+            for (PHHueParsingError parsingError: parsingErrorsList) {
+                Log.e(TAG, "ParsingError : " + parsingError.getMessage());
+            }
+        }
+    };
 
     @Override
     public void onCreate(Bundle state) {
@@ -87,7 +192,47 @@ public class PocketSphinxActivity extends Activity implements
         display.setTypeface(quickSandFont);
         display.setText("drawing magic ...");
 
-        hueHandler = new HueHandler();
+
+        /******
+        *******/
+//        public static final String IP_ADDRESS = "192.168.1.16";
+//        http://192.168.1.16/debug/clip.html
+//        public static final String USERNAME = "UY0J1uAWDCOtEjLwoewsTm4JUCgycrtKoUdON69j";
+//        try {
+//            URL url = new URL("http://192.168.1.16/api/UY0J1uAWDCOtEjLwoewsTm4JUCgycrtKoUdON69j/lights/2/state");
+//            HttpURLConnection httpCon = (HttpURLConnection) url.openConnection();
+//            httpCon.setDoOutput(true);
+//            httpCon.setRequestMethod("PUT");
+//            OutputStreamWriter out = new OutputStreamWriter(
+//                    httpCon.getOutputStream());
+//            out.write("{\"on\":false}");
+//            out.close();
+//        } catch (Exception e) {
+//            System.out.println("WTF");
+//        }
+
+
+        // hueHandler = new HueHandler();
+        phHueSDK = PHHueSDK.create();
+
+        // Set the Device Name (name of your app). This will be stored in your bridge whitelist entry.
+        phHueSDK.setAppName(APP_NAME);
+        // phHueSDK.setDeviceName(android.os.Build.MODEL);
+        phHueSDK.setDeviceName(APP_NAME);
+
+        // Register the PHSDKListener to receive callbacks from the bridge.
+        phHueSDK.getNotificationManager().registerSDKListener(listener);
+
+        PHAccessPoint accessPoint = new PHAccessPoint();
+        accessPoint.setIpAddress(IP_ADDRESS);
+        accessPoint.setUsername(USERNAME);
+
+        if (!phHueSDK.isAccessPointConnected(accessPoint)) {
+            // No need .. we already display "drawing magic ..."
+            //  PHWizardAlertDialog.getInstance().showProgressDialog(R.string.connecting, PHHomeActivity.this);
+            phHueSDK.connect(accessPoint);
+        }
+
         loadColors();
 
         ImageView micButton = (ImageView) findViewById(R.id.micButton);
@@ -146,11 +291,12 @@ public class PocketSphinxActivity extends Activity implements
                     // HueHandler might not be done
                     // TODO: better way of doing this
                     boolean flag = true;
-                    while (flag) {
-                        if (hueHandler.phLight != null) {
+                  //  while (flag) {
+                   ///     if (hueHandler.phLight != null) {
+                        //    System.out.println(hueHandler.phLight);
                             flag = false;
-                        }
-                    }
+                      //  }
+                    //}
                     ((TextView) findViewById(R.id.display)).setText("cast");
                 }
             }
@@ -180,7 +326,7 @@ public class PocketSphinxActivity extends Activity implements
             recognizer.shutdown();
         }
 
-        hueHandler.wrapUp();
+        // hueHandler.wrapUp();
     }
 
     /**
@@ -209,7 +355,44 @@ public class PocketSphinxActivity extends Activity implements
                 display.setText("cast again");
             } else {
                 display.setText(text);
-                hueHandler.setColor(spellsColors.get(text));
+                // hueHandler.setColor(spellsColors.get(text));
+                PHLightState lightState = new PHLightState();
+                float[] xy = HueHandler.rgbToXy(spellsColors.get(text));
+                lightState.setX(xy[0]);
+                lightState.setY(xy[1]);
+                // Packing listener for now.
+                phBridge.updateLightState(phLight, lightState, new PHLightListener() {
+                    @Override
+                    public void onReceivingLightDetails(PHLight phLight) {
+
+                    }
+
+                    @Override
+                    public void onReceivingLights(List<PHBridgeResource> list) {
+
+                    }
+
+                    @Override
+                    public void onSearchComplete() {
+
+                    }
+
+                    @Override
+                    public void onSuccess() {
+                        System.out.println("Success");
+                    }
+
+                    @Override
+                    public void onError(int i, String s) {
+                        System.out.println("Error");
+                    }
+
+                    @Override
+                    public void onStateUpdate(Map<String, String> map, List<PHHueError> list) {
+                        System.out.println("update");
+                    }
+                });
+                phBridge.updateLightState(phLight, lightState);
             }
         }
     }
